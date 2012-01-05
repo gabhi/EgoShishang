@@ -68,6 +68,23 @@ public class AmazonPPA {
 		return params;
 	}
 
+	public static Map<String,String> setItemLookup(Map<String,String> params, List<String> itemList)
+	{
+		params.put("Operation", "ItemLookup");
+		params.put("IdType", "ASIN");
+		params.put("ResponseGroup", "Images,Small");
+		params.put("Condition", "All");
+		String itemListStr = "";
+		for(String itemId: itemList)
+		{
+			itemListStr += (itemListStr.equals("") ? "":",");
+			itemListStr += itemId;
+		}
+		params.put("ItemId", itemListStr);
+		return params;
+	}
+	
+	
 	public static Document retrieveDocument(SignedRequestsHelper helper,
 			Map<String, String> params) throws InterruptedException {
 		String requestUrl = helper.sign(params);
