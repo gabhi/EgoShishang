@@ -31,6 +31,7 @@ public class ItemProfileFetcher {
 			Element itemNode = (Element)itemNodes.item(i);
 			//get the title of item, price, detailed url, large photo url
 			ItemMeta tmpMeta = new ItemMeta();
+			tmpMeta.asin = itemNode.getElementsByTagName("ASIN").item(0).getTextContent();
 			tmpMeta.url = itemNode.getElementsByTagName("DetailPageURL").item(0).getTextContent();
 			Element imageNode = (Element)itemNode.getElementsByTagName("LargeImage").item(0);
 			tmpMeta.photoUrl = imageNode.getElementsByTagName("URL").item(0).getTextContent();
@@ -41,7 +42,7 @@ public class ItemProfileFetcher {
 		}
 		return itemList;
 	}
-	public List<ItemMeta>  batchProductQuery(List<String> asinList)
+	public List<ItemMeta> batchProductQuery(String[] asinList)
 	{
 		AmazonPPA.setCommonParams(params);
 		AmazonPPA.setItemLookup(params, asinList);
@@ -49,17 +50,17 @@ public class ItemProfileFetcher {
 		try {
 			Document response = AmazonPPA.retrieveDocument(helper, params);	
 			metaList = parseResponse(response);
-//			for(ItemMeta item : metaList)
-//			{
-//				System.out.println(item);
-//			}
+			for(ItemMeta item : metaList)
+			{
+				System.out.println(item);
+			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return metaList;
+		
 	}
-	
 	public static void main(String[] args)
 	{
 		ItemProfileFetcher pc = new ItemProfileFetcher();
@@ -76,11 +77,7 @@ public class ItemProfileFetcher {
 		"B0011BY7M4",
 		"B0016KFXGO"
 		};
-		for(String asin : asinArray)
-		{
-			asinList.add(asin);
-		}
-		pc.batchProductQuery(asinList);
+		pc.batchProductQuery(asinArray);
 	}
 
 }

@@ -1,6 +1,6 @@
 package com.egoshishang.data;
 
-import java.security.*;
+import org.apache.hadoop.hbase.util.Bytes;
 
 public class ItemImage {
 	protected byte[] imageByte = null;
@@ -33,25 +33,18 @@ public class ItemImage {
 		
 	}
 	
-	public void genKey(ImageKeyGenerate keyGen)
+	public void setKey(long key)
 	{
-		this.key = keyGen.generate(imageByte);
+		this.key = Bytes.toBytes(key);
+	}
+	public long getKey()
+	{
+		return Bytes.toLong(this.key);
+	}
+	public byte[] getKeyByte()
+	{
+		return this.key;
 	}
 	
-	public static class MD5ImageKeyGen implements ImageKeyGenerate
-	{
 
-		@Override
-		public byte[] generate(byte[] imageByte) {
-			byte[] key = null;
-			try {
-				MessageDigest md = MessageDigest.getInstance("MD5");
-				key = md.digest(imageByte);
-			} catch (NoSuchAlgorithmException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			return key;
-		}
-	}
 }

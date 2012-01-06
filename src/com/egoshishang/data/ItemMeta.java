@@ -13,10 +13,11 @@ public class ItemMeta implements Serializable,Writable{
 	public String url = "";
 	public String photoUrl = "";
 	public String extra = "";
+	public String asin = "";
 	@Override
 	public String toString()
 	{
-		return title + "\t" + url + "\t" + photoUrl;
+		return asin + "\t" + title + "\t" + url + "\t" + photoUrl;
 	}
 	@Override
 	public void readFields(DataInput input) throws IOException {

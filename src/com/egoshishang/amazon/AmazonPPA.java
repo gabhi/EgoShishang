@@ -68,7 +68,7 @@ public class AmazonPPA {
 		return params;
 	}
 
-	public static Map<String,String> setItemLookup(Map<String,String> params, List<String> itemList)
+	public static Map<String,String> setItemLookup(Map<String,String> params, String[] itemList)
 	{
 		params.put("Operation", "ItemLookup");
 		params.put("IdType", "ASIN");
