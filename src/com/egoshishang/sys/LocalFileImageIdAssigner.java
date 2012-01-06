@@ -1,16 +1,14 @@
 package com.egoshishang.sys;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 public class LocalFileImageIdAssigner extends ImageIdAssigner{
 
 	protected String configFilePath = null;
-	protected BufferedWriter idWriter = null;
+	protected RandomAccessFile idReaderWriter = null;
 	private LocalFileImageIdAssigner()
 	{	
 		
@@ -24,9 +22,15 @@ public class LocalFileImageIdAssigner extends ImageIdAssigner{
 		return assignerInst;
 	}
 	@Override
-	public void init(String filePath)
+	public void setUp(String filePath)
 	{
 		this.configFilePath  = filePath;
+		try {
+			idReaderWriter = new RandomAccessFile(new File(configFilePath), "rw");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		readId();
 	}
 	
@@ -34,48 +38,39 @@ public class LocalFileImageIdAssigner extends ImageIdAssigner{
 	public long nextId() {
 		long curVal = this.id;
 		this.id++;
+		writeId();
 		return curVal;
 	}
 
 	@Override
 	public void readId() {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(this.configFilePath));
-			String line = br.readLine();
-			if(line != null)
-			{
-				this.id = Long.valueOf(line);
-			}
-			br.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			idReaderWriter.seek(0);
+			this.id = Long.valueOf(idReaderWriter.readLine());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}	
+		}
 	}
 
 	@Override
 	public void writeId() {
 		try {
-			if(idWriter == null)
-			{
-				idWriter = new BufferedWriter(new FileWriter(this.configFilePath));				
-			}
-			idWriter.write(String.valueOf(this.id));
-			idWriter.flush();
-			idWriter.close();
-			idWriter = null;
+			idReaderWriter.seek(0);
+			idReaderWriter.write(String.valueOf(this.id).getBytes());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	@Override
-	public void finalize()
-	{
-		writeId();
+	public void tearDown() {
+		try {
+			this.idReaderWriter.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 }

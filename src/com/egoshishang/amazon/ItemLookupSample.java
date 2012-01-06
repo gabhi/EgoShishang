@@ -72,7 +72,6 @@ public class ItemLookupSample {
      * You can choose a different value if this value does not work in the
      * locale of your choice.
      */
-    private static final String ITEM_ID = "0545010225";
 
     public static void main(String[] args) {
         /*

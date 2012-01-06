@@ -18,7 +18,7 @@ import com.egoshishang.sys.LocalFileImageIdAssigner;
 import com.egoshishang.sys.WorkQueue;
 import com.egoshishang.util.DataUtility;
 
-public class AmazonHBaseItemExport extends HBassItemExport {
+public class AmazonHBaseItemExport extends HBaseItemExport {
 
 	protected String asinFile = null;
 	protected String imageIdFile = null;
@@ -44,7 +44,7 @@ public class AmazonHBaseItemExport extends HBassItemExport {
 	public void init()
 	{
 		super.init();
-		this.imageIdAssigner.init(this.imageIdFile);
+		this.imageIdAssigner.setUp(this.imageIdFile);
 		try {
 			asinReader = new BufferedReader(new FileReader(asinFile));
 		} catch (FileNotFoundException e) {
@@ -81,6 +81,7 @@ public class AmazonHBaseItemExport extends HBassItemExport {
 					byte[] itemImageByte = imageDownloadMap.get(itemMeta.asin);
 					ItemImage itemImage = new ItemImage();
 					itemImage.setImageByte(itemImageByte);
+					
 					itemImage.setItemMeta(DataUtility.objectToByteArray(itemMeta));
 					itemImage.setItemUrl(itemMeta.url);
 					itemList.add(itemImage);
@@ -150,6 +151,20 @@ public class AmazonHBaseItemExport extends HBassItemExport {
 				numImageDownload.value--;
 				numImageDownload.notify();
 			}
+		}
+	}
+	public static void main(String[] args)
+	{
+		String asinFile = args[0];
+		String imageIdFile = args[1];
+		int numThreads = Integer.valueOf(args[2]);
+	    HBaseItemExport itemExporter = new AmazonHBaseItemExport(asinFile, imageIdFile, numThreads);
+	    itemExporter.init();
+	    try {
+			itemExporter.export();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 }

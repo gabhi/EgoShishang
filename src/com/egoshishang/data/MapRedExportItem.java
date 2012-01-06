@@ -106,7 +106,7 @@ public class MapRedExportItem extends Configured implements Tool{
 			tableName = conf.get("conf.tab");
 			imageIdFile = conf.get("conf.id.file");
 			idAssigner = LocalFileImageIdAssigner.getInstance();
-			idAssigner.init(imageIdFile);
+			idAssigner.setUp(imageIdFile);
 			numDownloadThreads = conf.getInt("conf.thread.num",10);
 			//get a htable instance
 			this.table = HBaseInstance.getInstance().getTable(tableName);

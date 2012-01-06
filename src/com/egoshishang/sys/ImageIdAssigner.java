@@ -5,8 +5,9 @@ public abstract class  ImageIdAssigner {
 	protected String configFilePath = null;
 	protected static ImageIdAssigner assignerInst = null;
 	protected ImageIdAssigner(){}
-	public abstract void init(String configFilePath);
+	public abstract void setUp(String configFilePath);
 	public abstract void readId();
 	public abstract void writeId();
 	public abstract long nextId();
+	public abstract void tearDown();
 }

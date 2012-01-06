@@ -17,7 +17,7 @@ public class HBaseInstance {
 	
 	private HBaseInstance()
 	{
-		config = new HBaseConfiguration();
+		config = HBaseConfiguration.create();
 		tableMap = new HashMap<String,HTable>();
 	}
 	
@@ -36,6 +36,7 @@ public class HBaseInstance {
 		else
 		{
 			try {
+				System.out.println("requested table: " + tableName);
 				HTable newTable = new HTable(this.config, tableName);
 				tableMap.put(tableName, newTable);
 				tableReturn = newTable;
