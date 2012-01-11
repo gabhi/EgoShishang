@@ -16,9 +16,9 @@ import com.egoshishang.util.DataUtility;
 public class AmazonHBaseItemExportTest {
 
 	protected AmazonHBaseItemExport amazonExport = null;
-	String asinFile = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data/asin_file";
+	String asinFile = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data/10000_asin_jn";
 	String imageIdFile = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data/image_id";
-	
+	String counterFile = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data/image_counter";
 	@Before
 	public void setUp()
 	{
@@ -28,27 +28,11 @@ public class AmazonHBaseItemExportTest {
 	public void testBatchQuery()
 	{
 		String imageRoot = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data";
-		List<ItemImage> itemList = amazonExport.generateItems();
-		for(ItemImage item : itemList)
-		{
-			ItemMeta meta = (ItemMeta)DataUtility.byteArrayToObject(item.itemMeta);
-			System.out.println(meta);
-			//get the image binary data
-			try {
-				FileOutputStream ofs = new FileOutputStream(imageRoot + "/" + meta.asin + ".jpg");
-				ByteArrayInputStream bis = new ByteArrayInputStream(item.imageByte);
-				//copy to the file
-				IOUtils.copyBytes(bis, ofs, 10240);
-				ofs.close();
-				bis.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
+		amazonExport.setImageLocalDir(imageRoot);
+		amazonExport.setMetaLocalFile(imageRoot + "/item_meta");
+		amazonExport.setDownloadCounterFile(counterFile);
+		amazonExport.init();
+		amazonExport.export();
 	}
+	
 }

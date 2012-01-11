@@ -36,9 +36,13 @@ public class LocalFileImageIdAssigner extends ImageIdAssigner{
 	
 	@Override
 	public long nextId() {
-		long curVal = this.id;
-		this.id++;
-		writeId();
+		long curVal;
+		synchronized(this)
+		{
+			curVal = this.id;
+			this.id++;
+			writeId();
+		}
 		return curVal;
 	}
 

@@ -48,12 +48,16 @@ public class ItemProfileFetcher {
 		AmazonPPA.setItemLookup(params, asinList);
 		List<ItemMeta> metaList = new LinkedList<ItemMeta>();
 		try {
-			Document response = AmazonPPA.retrieveDocument(helper, params);	
-			metaList = parseResponse(response);
-			for(ItemMeta item : metaList)
+			Document response = AmazonPPA.retrieveDocument(helper, params);
+			if(response == null)
 			{
-				System.out.println(item);
+				return metaList;
 			}
+			metaList = parseResponse(response);
+//			for(ItemMeta item : metaList)
+//			{
+//				System.out.println(item);
+//			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

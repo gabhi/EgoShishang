@@ -7,10 +7,13 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.HTablePool;
 
 public class HBaseInstance {
 	protected HTable table = null;
 	protected Map<String,HTable> tableMap = null;
+	protected HTablePool tablePool = null;
 	private static HBaseInstance instance = new HBaseInstance();
 	Configuration config = null;
 	@SuppressWarnings("deprecation")
@@ -25,6 +28,22 @@ public class HBaseInstance {
 	{
 		return instance;
 		
+	}
+	
+	public HTablePool createTablePool(int max)
+	{
+		tablePool = new HTablePool(this.config,max);
+		return tablePool;
+	}
+	
+	public HTableInterface getTableFromPool(String tableName)
+	{
+		return tablePool.getTable(tableName);
+	}
+	
+	public HTablePool getTablePool()
+	{
+		return tablePool;
 	}
 	public  HTable getTable(String tableName)
 	{

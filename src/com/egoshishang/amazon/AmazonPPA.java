@@ -88,7 +88,7 @@ public class AmazonPPA {
 	public static Document retrieveDocument(SignedRequestsHelper helper,
 			Map<String, String> params) throws InterruptedException {
 		String requestUrl = helper.sign(params);
-		System.out.println(requestUrl);
+//		System.out.println(requestUrl);
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		DocumentBuilder db;
 		int retries = 10;
@@ -115,7 +115,7 @@ public class AmazonPPA {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				retries--;
-				System.out.println("error");
+				System.out.println("image download error:" + requestUrl);
 				Thread.sleep(1000);
 				// e.printStackTrace();
 			}

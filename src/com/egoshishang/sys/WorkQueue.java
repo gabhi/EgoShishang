@@ -39,7 +39,7 @@ public class WorkQueue
     private class PoolWorker extends Thread {
         public void run() {
             Runnable r;
-
+            boolean interrupted = false;
             while (true) {
                 synchronized(queue) {
                     while (queue.isEmpty()) {
@@ -49,11 +49,17 @@ public class WorkQueue
                         }
                         catch (InterruptedException ignored)
                         {
+                        	interrupted = true;
                         	break;
                         }
                     }
-
+                    if(interrupted)
+                    	break;
                     r = (Runnable) queue.removeFirst();
+                    if(r == null)
+                    {
+                    	break;
+                    }
                 }
 
                 // If we don't catch RuntimeException, 
