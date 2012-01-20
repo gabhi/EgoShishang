@@ -72,7 +72,8 @@ public class AmazonPPA {
 	{
 		params.put("Operation", "ItemLookup");
 		params.put("IdType", "ASIN");
-		params.put("ResponseGroup", "Images,Small");
+		params.put("ResponseGroup", "Small, OfferSummary, ItemAttributes,Images");
+//		params.put("ResponseGroup", "Small");
 		params.put("Condition", "All");
 		String itemListStr = "";
 		for(String itemId: itemList)

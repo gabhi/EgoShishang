@@ -30,6 +30,7 @@ public class ProductDetailedPageFetcher {
 			return detailedUrl + "\t" + numResults + "\t" + numPage;
 		}
 	}
+	
 	public ProductDetailedPageFetcher(String inputPath, String outputPath)
 	{
 		this.inputPath = inputPath;

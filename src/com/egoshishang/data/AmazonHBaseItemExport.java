@@ -16,17 +16,19 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.io.IOUtils;
 
 import com.egoshishang.amazon.ItemProfileFetcher;
+import com.egoshishang.amazon.ResponseParser;
 import com.egoshishang.conf.HBaseInstance;
 import com.egoshishang.conf.TableConfiguration;
+import com.egoshishang.orm.HBaseObject.ItemMeta;
+import com.egoshishang.orm.ItemOperator;
 import com.egoshishang.sys.ImageIdAssigner;
 import com.egoshishang.sys.LocalFileImageIdAssigner;
 import com.egoshishang.sys.WorkQueue;
-import com.egoshishang.util.DataUtility;
+import com.egoshishang.util.CommonUtils;
 
 public class AmazonHBaseItemExport extends HBaseItemExport {
 
 	protected String asinFile = null;
-	protected String imageIdFile = null;
 
 	protected BufferedReader asinReader = null;
 	protected ItemProfileFetcher profileFetcher = null;
@@ -35,41 +37,20 @@ public class AmazonHBaseItemExport extends HBaseItemExport {
 	protected WorkQueue imageDownloadQueue = null;
 
 
-	public AmazonHBaseItemExport(String asinFile, String imageIdFile,
+	public AmazonHBaseItemExport(String asinFile,
 			int numDownloadThreads) {
 		this.asinFile = asinFile;
-		this.imageIdFile = imageIdFile;
+		try {
+			this.asinReader = new BufferedReader(new FileReader(this.asinFile));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		profileFetcher = new ItemProfileFetcher();
+		profileFetcher.setResponseParser(ResponseParser.getAmazonResponseParser());
 		imageDownloadMap = new HashMap<String, byte[]>();
 		// /create image download queue
 		imageDownloadQueue = new WorkQueue(numDownloadThreads);
-	}
-
-	@Override
-	public boolean init() {
-		if (super.init()) {
-			this.imageIdAssigner.setUp(this.imageIdFile);
-			try {
-				asinReader = new BufferedReader(new FileReader(asinFile));
-				return true;
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public TableConfiguration provideTableConfiguration() {
-		// TODO Auto-generated method stub
-		return TableConfiguration.getHardcodeConfiguration();
-	}
-
-	@Override
-	public ImageIdAssigner provideImageIdAssigner() {
-		// TODO Auto-generated method stub
-		return LocalFileImageIdAssigner.getInstance();
 	}
 
 	public static class LongCounter {
@@ -87,41 +68,15 @@ public class AmazonHBaseItemExport extends HBaseItemExport {
 
 		@Override
 		public void run() {
-
-			// download the image from internet and get its raw bytes
-			String imageUrl = itemMeta.photoUrl;
-			String asin = itemMeta.asin;
-			byte[] imageBytes = DataUtility.getInternetImage(imageUrl);
-			// System.out.println("download image from : " + imageUrl);
-			imageDownloadMap.put(asin, imageBytes);
-			// insert current image and item meta information to the database
-			ItemImage itemImage = new ItemImage();
-			itemImage.imageByte = imageBytes;
-			itemImage.itemUrl = itemMeta.url;
-			itemImage.itemMeta = DataUtility.objectToByteArray(itemMeta);
-			try {
-				if (imageBytes != null && imageBytes.length > 0)
-					itemExport.addItem(itemImage);
-			} finally {
+				ItemOperator.insertItem(itemMeta);				
 				synchronized (numImageToDownload) {
 					numImageToDownload.value--;
-					System.out.println("# of images to download:" + numImageToDownload.value);
+//					System.out.println("" + numImageToDownload.value);
+					System.out.println(".");
 					numImageToDownload.notifyAll();
 				}
-			}
-
 		}
 	}
-
-
-
-	@Override
-	public void cleanUp() {
-		// stop the work queue
-		super.cleanUp();
-		this.imageDownloadQueue.shutDown();
-	}
-
 	@Override
 	public List<ItemMeta> generateItemMeta() {
 		List<ItemMeta> itemMetaList = null;
@@ -178,56 +133,19 @@ public class AmazonHBaseItemExport extends HBaseItemExport {
 			}
 		}
 	}
-	public static void main(String[] args1) {
+	public static void main(String[] args) {
 		
-		String dataRoot = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data1";
-		String[] args = { dataRoot + "/asin_file", dataRoot + "/image_id" ,
-				dataRoot + "/image_counter", dataRoot + "/image_download", "10"};
-		if(args1.length > 0)
-		{
-			args = args1;
-		}
-		if (args.length != 4 && args.length != 5) {
+		if (args.length < 2) {
 			System.out
-					.println("arguments: asinFile imageIdFile downloadCounterFile [local download path] numThreads");
+					.println("arguments: asinFile  numThreads");
 			return;
 		}
-
 		String asinFile = args[0];
-		String imageIdFile = args[1];
-		String downloadCounterFile = args[2];
-		int numThreads;
-		String localImageDir = null;
-		
-		if(args.length == 5)
-		{
-			localImageDir = args[3];
-			numThreads = Integer.valueOf(args[4]);
-		}
-		else
-		{
-			numThreads = Integer.valueOf(args[3]);
-			HBaseInstance.getInstance().createTablePool(100);
-		}
-		
-		HBaseItemExport itemExporter = new AmazonHBaseItemExport(asinFile,
-				imageIdFile, numThreads);
-		itemExporter.setDownloadCounterFile(downloadCounterFile);
-
-		if(localImageDir != null)
-		{
-			//local mode enabled
-			itemExporter.setImageLocalDir(localImageDir);
-		}
-		
-		if (itemExporter.init() == false) {
-			System.err.println("failed to initialize the exporter");
-			return;
-		}
-
+		int numThreads = Integer.valueOf(args[1]);
+		HBaseInstance.getInstance().createTablePool(Integer.MAX_VALUE);
+		HBaseItemExport itemExporter = new AmazonHBaseItemExport(asinFile,numThreads);
 		System.out.println("start to exporting images to hbase");
 		itemExporter.export();
 		System.out.println("congrats! exporting done, cleanup");
-		itemExporter.cleanUp();
 	}
 }

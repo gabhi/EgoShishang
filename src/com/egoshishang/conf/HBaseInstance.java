@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.HTablePool;
+import org.apache.hadoop.hbase.client.Result;
 
 public class HBaseInstance {
 	protected HTable table = null;
@@ -27,8 +28,7 @@ public class HBaseInstance {
 	public static  HBaseInstance getInstance()
 	{
 		return instance;
-		
-	}
+	 }
 	
 	public HTablePool createTablePool(int max)
 	{

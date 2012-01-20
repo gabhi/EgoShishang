@@ -1,47 +1,32 @@
 package com.egoshishang.amazon;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
-import org.apache.hadoop.io.IOUtils;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Element;
 
-import com.egoshishang.data.ItemMeta;
+import com.egoshishang.conf.HBaseInstance;
+import com.egoshishang.orm.HBaseObject.ItemMeta;
+import com.egoshishang.orm.ItemOperator;
 
 public class ItemProfileFetcher {
 	protected SignedRequestsHelper helper = null;
 	protected Map<String,String> params = null;
+	protected ResponseParser responseParser = null;
 	
 	public ItemProfileFetcher()
 	{
 		helper = AmazonPPA.getRequesetHelper();
 		params = new HashMap<String,String>();
 	}
-	
-	protected List<ItemMeta> parseResponse(Document doc)
+	public void setResponseParser(ResponseParser rp)
 	{
-		List<ItemMeta> itemList = new LinkedList<ItemMeta>();
-		NodeList itemNodes = doc.getElementsByTagName("Item");
-		for(int i = 0; i < itemNodes.getLength(); i++)
-		{
-			Element itemNode = (Element)itemNodes.item(i);
-			//get the title of item, price, detailed url, large photo url
-			ItemMeta tmpMeta = new ItemMeta();
-			tmpMeta.asin = itemNode.getElementsByTagName("ASIN").item(0).getTextContent();
-			tmpMeta.url = itemNode.getElementsByTagName("DetailPageURL").item(0).getTextContent();
-			Element imageNode = (Element)itemNode.getElementsByTagName("LargeImage").item(0);
-			tmpMeta.photoUrl = imageNode.getElementsByTagName("URL").item(0).getTextContent();
-			Element attrNode = (Element)itemNode.getElementsByTagName("ItemAttributes").item(0);
-			tmpMeta.title = attrNode.getElementsByTagName("Title").item(0).getTextContent();
-			tmpMeta.extra = attrNode.getTextContent();
-			itemList.add(tmpMeta);
-		}
-		return itemList;
+		this.responseParser = rp;
 	}
+		
 	public List<ItemMeta> batchProductQuery(String[] asinList)
 	{
 		AmazonPPA.setCommonParams(params);
@@ -53,12 +38,12 @@ public class ItemProfileFetcher {
 			{
 				return metaList;
 			}
-			metaList = parseResponse(response);
+			metaList = this.responseParser.extractMeta(response);
 //			for(ItemMeta item : metaList)
 //			{
 //				System.out.println(item);
 //			}
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -67,8 +52,12 @@ public class ItemProfileFetcher {
 	}
 	public static void main(String[] args)
 	{
+		
+
+		String asinFile = "/Users/qizhao/Documents/code/Egoshishang/data/1m_asin_jn";
+		
 		ItemProfileFetcher pc = new ItemProfileFetcher();
-		List<String> asinList = new LinkedList<String>();
+		pc.setResponseParser(ResponseParser.getAmazonResponseParser());
 		String[] asinArray = {
 		"B005ZB6P6M",
 		"B006DUVZPA",
@@ -81,7 +70,38 @@ public class ItemProfileFetcher {
 		"B0011BY7M4",
 		"B0016KFXGO"
 		};
-		pc.batchProductQuery(asinArray);
+		HBaseInstance instance = HBaseInstance.getInstance();
+		instance.createTablePool(Integer.MAX_VALUE);
+		
+		try {
+			String line;
+			BufferedReader br = new BufferedReader(new FileReader(asinFile));
+			while((line = br.readLine()) != null)
+			{
+				String[] asins = line.split("\t");
+				List<ItemMeta> metaList = pc.batchProductQuery(asins);
+				for(ItemMeta meta : metaList)
+				{
+//					ItemOperator.insertItem(meta);
+					System.out.println(meta.toString() + "\n");
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+//		List<ItemMeta> metaList = pc.batchProductQuery(asinArray);
+//		String idFile = "/Users/qizhao/Workspaces/MyEclipse 9/Egoshishang/data/image_id";
+//		if(args.length > 0)
+//		{
+//			idFile = args[0];
+//		}
+		
 	}
 
 }
