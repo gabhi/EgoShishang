@@ -54,7 +54,7 @@ public class AmazonHBaseItemExport extends HBaseItemExport {
 	}
 
 	public static class LongCounter {
-		public long value;
+		public long value = 0;
 	}
 
 	private class ImageDownloadThread implements Runnable {

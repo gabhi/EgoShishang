@@ -11,6 +11,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.select.Elements;
+
 import com.egoshishang.orm.HBaseObject.ItemImage;
 import com.egoshishang.orm.HBaseObject.ItemMeta;
 import com.egoshishang.util.CommonUtils;
@@ -53,7 +59,7 @@ public class ProductCrawl {
 		}
 		finally
 		{
-			if( wf != null &wf.getContent() !=null)
+			if( wf != null && wf.getContent() !=null)
 			{
 				if(wf.getContent() instanceof String)
 				{
@@ -85,35 +91,7 @@ public class ProductCrawl {
 		return matchedUrl;
 	}
 	
-	public static byte[] downloadImage(String imageUrl)
-	{
-		WebFile wf = null;
-		byte[] imageBytes = null;
-		try {
-			 wf = new WebFile(imageUrl);
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		finally
-		{
-			if( wf != null && wf.getContent() != null)
-			{
-					//save the image file
-					imageBytes = (byte[])wf.getContent();
-			}
-		}
-		return imageBytes;
-	}
+
 	public static void parsePrice(ItemMeta item, String content)
 	{
 		
@@ -136,30 +114,6 @@ public class ProductCrawl {
 			item.addColumn(ItemMeta.LOWEST_NEW_PRICE, MyBytes.toBytes(actualPrice));
 		}
 		//
-	}
-	
-	public static List<ItemImage> downloadItemImage(ItemImage itemImage, ItemMeta meta)
-	{
-		List<ItemImage> imageList = new LinkedList<ItemImage>();
-		meta.generateKey();
-		List<byte[]> photoUrlList = meta.getColumnList(ItemMeta.PHOTO_URL);
-		for(byte[] urlBytes : photoUrlList)
-		{
-			String photoUrl = (String)MyBytes.toObject(urlBytes, MyBytes.getDummyObject(String.class));
-			byte[] imageData = CommonUtils.getInternetImage(photoUrl);
-			if(imageData != null)
-			{
-				ItemImage tmpImage = new ItemImage();
-				tmpImage.addColumn(ItemImage.IMAGE_DATA, imageData);
-				tmpImage.generateKey();
-				String colName = tmpImage.addColumn(ItemImage.ITEM_ID, meta.getRowKey());
-				//also update meta
-				
-				meta.addColumn(ItemMeta.PHOTO_KEY, tmpImage.getRowKey());
-				meta.addColumn(ItemMeta.FOREIGN_PHOTO_COL, MyBytes.toBytes(colName));
-			}
-		}
-		return imageList;
 	}
 	
 	public  static void crawlItem(ItemMeta item)
@@ -221,6 +175,12 @@ public class ProductCrawl {
 		}
 		return fileName;
 	}
+	/**
+	 * 
+	 * @param imageBytes
+	 * @param imagePath
+	 * @return
+	 */
 	
 	public static boolean saveImage(byte[] imageBytes, String imagePath)
 	{
@@ -241,6 +201,124 @@ public class ProductCrawl {
 		return result;	
 	}
 
+	/**
+	 * extract ASIN from the product url
+	 * 
+	 * @param href url href for the product
+	 * @return ASIN string for the product
+	 */
+	protected static String extractAsin(String href)
+	{
+		String asinPat = "/dp/([\\d\\w]+)";
+		Pattern pat= Pattern.compile(asinPat);
+		Matcher mat = pat.matcher(href);
+		String asin = null;
+		if(mat.find())
+		{
+			asin = mat.group(1);
+		}
+		return asin;
+	}
+	
+	/**
+	 * extract the price number from a raw string in the form like ¥3.14
+	 * @param priceString price input string
+	 * @return a float number, eg. 3.14
+	 */
+	protected static float parsePrice(String priceString)
+	{
+		String patString = "([\\d\\.]+)";
+		Pattern pat = Pattern.compile(patString);
+		Matcher mat = pat.matcher(priceString);
+		float price = -1;
+		if(mat.find())
+		{
+			price = Float.valueOf(mat.group(1));
+		}
+		return price;
+	}
+	public static String assemberSmallImageUrl(String asin)
+	{
+		String url = "http://images.amazon.com/images/P/" + asin + ".01._AA175_PU_PU-5_.jpg";
+		return url;
+	}
+	
+	public static String assembleAmazonImageUrl(String asin)
+	{
+		String url = "http://images.amazon.com/images/P/" + asin + ".01._SCLZZZZZZZ_PU_PU-5_.jpg";
+		return url;
+	}
+	/**
+	 * @brief extract title, price(list and new), asin information for products listed in current page
+	 * 
+	 * @param content raw web page content, which will be parsed 
+	 * @return a list of items with meta information 
+	 */
+	public static List<ItemMeta> parsePage(String content)
+	{
+		Document html = Jsoup.parse(content);
+//		final String resultListId = "atfResults";
+//		Element resultList = html.getElementById(resultListId);
+		final int maxItemId = 11;
+		List<ItemMeta> metaList = new LinkedList<ItemMeta>();
+		for(int i = 0; i <= maxItemId; i++)
+		{
+			ItemMeta tmpMeta = new ItemMeta();
+			Element result = html.getElementById("result_" + i);
+			try{
+			if(result != null)
+			{
+				//get the data div
+				Element data = result.getElementsByClass("productData").get(0);
+				Element title = data.getElementsByClass("productTitle").get(0);
+				Element titleUrl = title.select("a").get(0);
+				String href = titleUrl.attr("href");
+				//extract asin from href
+				String asin = extractAsin(href);
+				//get the product title
+				String titleText = titleUrl.text();
+				//set up the item
+				tmpMeta.addColumn(ItemMeta.CURRENCY_CODE, MyBytes.toBytes(ItemMeta.CNY));
+				tmpMeta.addColumn(ItemMeta.MERCHANT, MyBytes.toBytes(ItemMeta.AMAZON));
+				if(asin != null)
+				{
+					tmpMeta.addColumn(ItemMeta.ASIN, MyBytes.toBytes(asin));
+				}
+				tmpMeta.addColumn(ItemMeta.URL, MyBytes.toBytes(href));
+				tmpMeta.addColumn(ItemMeta.TITLE, MyBytes.toBytes(titleText));
+				//get the price information
+				Element priceNode = data.getElementsByClass("newPrice").get(0);
+				Elements strikeNode = priceNode.select("strike");
+				String listPriceText = null;
+				if(!strikeNode.isEmpty())
+				{
+					 listPriceText = strikeNode.get(0).text();
+				}
+				Elements newPriceNode = priceNode.select("span");
+				String newPriceText = "-1";
+				if(!newPriceNode.isEmpty())
+				{
+					newPriceText = priceNode.select("span").get(0).text();
+				}
+				float newPrice = parsePrice(newPriceText);
+				if(listPriceText == null)
+					listPriceText = newPriceText;
+				float listPrice = parsePrice(listPriceText);
+				tmpMeta.addColumn(ItemMeta.LIST_PRICE, MyBytes.toBytes(listPrice));
+				tmpMeta.addColumn(ItemMeta.LOWEST_NEW_PRICE, MyBytes.toBytes(newPrice));
+				String photoUrl = assembleAmazonImageUrl(asin);
+				tmpMeta.addColumn(ItemMeta.PHOTO_URL, MyBytes.toBytes(photoUrl));
+				metaList.add(tmpMeta);
+			}
+			}catch(Exception e)
+			{
+				e.printStackTrace();
+				System.err.println("ItemError:" + MyBytes.toObject(tmpMeta.getColumnFirst(ItemMeta.ASIN),MyBytes.getDummyObject(String.class)));
+			}
+		}
+		return metaList;
+	}
+	
 	public static List<ItemMeta> extractPageItemId(String content)
 	{
 		List<ItemMeta> metaList = new LinkedList<ItemMeta>();

@@ -4,10 +4,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.egoshishang.mongodb.CategoryPageTracker;
 import com.egoshishang.orm.HBaseObject.ItemMeta;
 import com.egoshishang.util.WebFile;
 
@@ -18,11 +20,17 @@ public class CategoryCrawl {
 	protected boolean numPageInited = false;
 	protected String baseUrl = null;
 	protected String nextPageUrl = null;
+	
 	public CategoryCrawl(String categoryId)
 	{
 		this.categoryId = categoryId;
 		this.baseUrl = "http://www.amazon.cn/s?ie=UTF8&rh=n%3A" + categoryId + "&page=";
 		nextPageUrl = baseUrl + "1";
+	}
+	
+	protected String firstPage()
+	{
+		return baseUrl + "1";		
 	}
 	
 	protected String nextPageLink(String content)
@@ -38,26 +46,47 @@ public class CategoryCrawl {
 		return nextLinkUrl;
 	}
 	
+	protected static CategoryPageTracker getPageTracker()
+	{
+		return CategoryPageTracker.getInstance();
+	}
+	
 	public List<ItemMeta> nextPage()
 	{
 		WebFile wf;
 		List<ItemMeta> metaList = null;
 		try {
-			wf = new WebFile(nextPageUrl);
-			String content = (String) wf.getContent();
-			if(!numPageInited)
+			String curPageUrl = getPageTracker().getPageUrl(Integer.valueOf(this.categoryId));
+			this.curPage = getPageTracker().getPageIndex(Integer.valueOf(this.categoryId));
+			this.numPage = getPageTracker().getMaxPage(Integer.valueOf(this.categoryId));
+//			System.out.println("current page and max page:" + curPage + " " + numPage);
+			if(this.curPage > this.numPage)
+				return new LinkedList<ItemMeta>();
+			if(curPageUrl == null)
 			{
-				if(content != null)
-				{
-					numPage = ProductCrawl.getItemPageCnt(content);
-					numPageInited = true;					
-				}
+				curPageUrl = firstPage();
 			}
+			
+			wf = new WebFile(curPageUrl);
+			String content = (String) wf.getContent();
+
+			//update num of pages for this category
 			if(content != null)
 			{
+				if(curPageUrl.equals(firstPage()))
+				{
+					numPage = ProductCrawl.getItemPageCnt(content);
+					getPageTracker().setMaxPage(Integer.valueOf(this.categoryId), numPage);
+					numPageInited = true;										
+				}
 				nextPageUrl = this.nextPageLink(content);
-				metaList = ProductCrawl.extractPageItemId(content);
+				//update next page url
+				getPageTracker().setNextPageUrl(Integer.valueOf(this.categoryId), nextPageUrl);
+//				metaList = ProductCrawl.extractPageItemId(content);
+//				System.out.println(content);
+				metaList = ProductCrawl.parsePage(content);
 			}
+			
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -80,10 +109,12 @@ public class CategoryCrawl {
 	{
 		return curPage <= numPage;
 	}
+	
 	public static void main(String[] args)
 	{
 		String categoryId = "658393051";
 		CategoryCrawl cc = new CategoryCrawl(categoryId);
+		
 		while(cc.hasMorePage())
 		{
 			List<ItemMeta> metaList = cc.nextPage();		

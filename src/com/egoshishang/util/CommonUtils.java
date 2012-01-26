@@ -3,9 +3,11 @@ package com.egoshishang.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 
 public class CommonUtils {
 	public static String arrayToString(Object[] objArr)
@@ -18,9 +20,49 @@ public class CommonUtils {
 		}
 		return sb.toString();
 	}
+	public static String byteArrayToHexString(byte[] byteArr)
+	{
+		StringBuilder sb = new StringBuilder();
+		for(byte b : byteArr)
+		{
+			sb.append(Integer.toHexString(0xFF & b ));
+		}
+		return sb.toString();
+	}
+	
+	public static byte[] hexStringToByteArray(String str)
+	{
+		return new BigInteger(str,16).toByteArray();
+	}
+	
+	public static byte[] StringToASCII(String str)
+	{
+		byte[] strBytes = str.getBytes(Charset.forName("US-ASCII"));
+		return strBytes;
+	}
+	
+	public static String ASCIIToString(byte[] strBytes)
+	{
+		return new String(strBytes,Charset.forName("US-ASCII"));
+	}
+	
 	public static int byteArrayCompare(byte[] arr1, byte[] arr2)
 	{
 		int result = 0;
+		if(arr1 == null)
+		{
+			arr1 = new byte[1];
+			arr1[0] = 0;
+		}
+		if(arr2 == null)
+		{
+			arr2 = new byte[1];
+			arr2[0] = 0;
+		}
+		if(arr1.length < arr2.length)
+			return -1;
+		if(arr1.length > arr2.length)
+			return 1;
 		for(int i =  0; i < arr1.length; i++)
 		{
 			if(arr1[i] < arr2[i])

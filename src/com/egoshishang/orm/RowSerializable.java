@@ -26,6 +26,8 @@ public abstract class RowSerializable {
 	protected Map<String, byte[]> colValueMap = new HashMap<String, byte[]>();
 	protected List<String> removeList = new LinkedList<String>();
 	public static final String COLUMN_MAX_INDEX = "cmi";
+	// update time stamp
+	public static final String UPDATE_TIME = "ut";
 	public static final byte[] COLUMN_FAMILY = MyBytes.toBytes("d");
 
 	public void setRowKey(byte[] rowKey) {
@@ -35,9 +37,10 @@ public abstract class RowSerializable {
 	public byte[] getRowKey() {
 		return this.rowKey;
 	}
-	public String getColumnIndexAsString()
-	{
-		return (String)MyBytes.toObject(colIndex,MyBytes.getDummyObject(String.class));
+
+	public String getColumnIndexAsString() {
+		return (String) MyBytes.toObject(colIndex,
+				MyBytes.getDummyObject(String.class));
 	}
 
 	public byte[] getColumnValue(String columnName) {
@@ -72,6 +75,7 @@ public abstract class RowSerializable {
 	}
 
 	public String addColumn(String colName, byte[] colunmValue) {
+		// first remove the column that
 		Integer maxCol = 0;
 		if (colIndexMap.containsKey(colName)) {
 			maxCol = colIndexMap.get(colName);
@@ -82,7 +86,10 @@ public abstract class RowSerializable {
 		// update the columnn index
 		colIndexMap.put(colName, maxCol);
 		String fullColumnName = synthesizeFullColumnName(colName, maxCol);
-		colValueMap.put(fullColumnName, colunmValue);
+		if (this.removeList.contains(fullColumnName)) {
+			this.removeList.remove(fullColumnName);
+		}
+		this.updateColumn(fullColumnName, colunmValue);
 		return fullColumnName;
 	}
 
@@ -90,8 +97,64 @@ public abstract class RowSerializable {
 		colValueMap.put(fullColName, columnValue);
 	}
 
+	public boolean assertColumn(String fullColName) {
+		return this.colValueMap.containsKey(fullColName);
+	}
+
 	public void removeColumn(String fullColName) {
-		this.removeList.add(fullColName);
+		// we use shrink strategy to do the column removing
+		if (assertColumn(fullColName)) {
+			String[] colNameSplits = RowSerializable
+					.decomposeFullColnumName(fullColName);
+			if (colNameSplits != null) {
+				// get the maximum index
+				int maxColIdx = this.colIndexMap.get(colNameSplits[0]);
+				if (maxColIdx > Integer.valueOf(colNameSplits[1])) {
+					String maxColName = RowSerializable
+							.synthesizeFullColumnName(colNameSplits[0],
+									maxColIdx);
+					// now move the last column to current column
+					this.colValueMap.put(fullColName,
+							this.colValueMap.get(maxColName));
+					fullColName = maxColName;
+				}
+				// add the maximum column to remove list
+				this.colIndexMap.put(colNameSplits[0], maxColIdx - 1);
+				this.removeList.add(fullColName);
+				// remove from the value map
+				this.colValueMap.remove(fullColName);
+			}
+		}
+	}
+
+	public void removeColumnList(String columnName) {
+
+		if (this.colIndexMap.containsKey(columnName)) {
+			int maxColIdx = colIndexMap.get(columnName);
+			for (int i = maxColIdx; i >= 0; i--) {
+				String fullColumnName = RowSerializable
+						.synthesizeFullColumnName(columnName, i);
+				this.removeColumn(fullColumnName);
+			}
+		}
+	}
+
+	public void delete() {
+		Delete del = new Delete(this.getRowKey());
+		HTable tab = this.getTable();
+		try {
+			tab.delete(del);
+			this.putTable(tab);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void addColumnList(String columnName, List<byte[]> columnValueList) {
+		for (byte[] columnVal : columnValueList) {
+			this.addColumn(columnName, columnVal);
+		}
 	}
 
 	public void commitUpdate() {
@@ -108,6 +171,7 @@ public abstract class RowSerializable {
 		}
 		HTable table = this.getTable();
 		try {
+//			System.out.println(this.getTableName() + " commit update");
 			table.put(put);
 			this.putTable(table);
 		} catch (IOException e) {
@@ -127,11 +191,15 @@ public abstract class RowSerializable {
 
 	public void commitDelete() {
 		Delete delete = new Delete(this.rowKey);
+		///nothing to remove, just return. otherwise, all columns will be deleted
+		if(this.removeList.isEmpty())
+			return;
 		for (String col : this.removeList) {
 			delete.deleteColumn(COLUMN_FAMILY, MyBytes.toBytes(col));
 		}
 		HTable table = getTable();
 		try {
+//			System.out.println(this.getTableName() + " commit delete");
 			table.delete(delete);
 			putTable(table);
 		} catch (IOException e) {
@@ -140,30 +208,36 @@ public abstract class RowSerializable {
 		}
 	}
 
-	public void retrieveFromHBase() {
-		Get get = new Get();
+	public boolean retrieveFromHBase() {
+//		System.out.println((String)MyBytes.toObject(this.getRowKey(), MyBytes.getDummyObject(String.class)));
+		Get get = new Get(this.getRowKey());
 		HTable table = getTable();
+		boolean exist = true;
 		try {
 			Result res = table.get(get);
-			for (KeyValue kv : res.list()) {
-				byte[] qualifier = kv.getKey();
-				String colName = (String) MyBytes.toObject(qualifier,
-						MyBytes.getDummyObject(String.class));
-				byte[] value = kv.getValue();
+			exist = !res.isEmpty();
+			if (exist) {
+				for (KeyValue kv : res.list()) {
+					byte[] qualifier = kv.getQualifier();
+					String colName = (String) MyBytes.toObject(qualifier,
+							MyBytes.getDummyObject(String.class));
+					byte[] value = kv.getValue();
+					if (colName.equals(RowSerializable.COLUMN_MAX_INDEX)) {
+						this.colIndex = value;
+						// /populate the key-value map
+						this.inflateColumnIndexMap();
+					} else {
+						this.colValueMap.put(colName, value);
+					}
 
-				if (colName.equals(RowSerializable.COLUMN_MAX_INDEX)) {
-					this.colIndex = value;
-					// /populate the key-value map
-					this.inflateColumnIndexMap();
-				} else {
-					this.colValueMap.put(colName, value);
 				}
-
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		this.putTable(table);
+		return exist;
 
 	}
 
@@ -173,13 +247,13 @@ public abstract class RowSerializable {
 	}
 
 	public void resultToField(Result res) {
-		
+
 		this.rowKey = res.getRow();
 		// map result to column
 		for (KeyValue kv : res.list()) {
 			String key = (String) MyBytes.toObject(kv.getQualifier(),
 					MyBytes.getDummyObject(String.class));
-//			System.out.println(key);
+			// System.out.println(key);
 			byte[] val = kv.getValue();
 			if (key.equals(RowSerializable.COLUMN_MAX_INDEX)) {
 				// also inflate the column index map
@@ -209,12 +283,21 @@ public abstract class RowSerializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		putTable(table);
 		return false;
 	}
 
 	protected static String synthesizeFullColumnName(String columnName,
 			Integer index) {
 		return columnName + "_" + index;
+	}
+
+	public static String[] decomposeFullColnumName(String fullColName) {
+		String[] splits = fullColName.split("_");
+		if (splits.length != 2) {
+			return null;
+		}
+		return splits;
 	}
 
 	public List<byte[]> getColumnList(String columnName) {
@@ -233,6 +316,21 @@ public abstract class RowSerializable {
 		return columnList;
 	}
 
+	public List<String> getColumnNameList(String columnName) {
+		List<String> nameList = new LinkedList<String>();
+		if (this.colIndexMap.containsKey(columnName)) {
+			Integer maxIndex = this.colIndexMap.get(columnName);
+			for (int i = 0; i <= maxIndex; i++) {
+				String fullColName = RowSerializable.synthesizeFullColumnName(
+						columnName, i);
+				if (this.colValueMap.containsKey(fullColName)) {
+					nameList.add(fullColName);
+				}
+			}
+		}
+		return nameList;
+	}
+
 	public byte[] getColumnFirst(String columnName) {
 		List<byte[]> columnList = getColumnList(columnName);
 		if (columnList != null && columnList.size() > 0) {
@@ -242,4 +340,29 @@ public abstract class RowSerializable {
 	}
 
 	public abstract String getTableName();
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		// add the column index map
+		sb.append("Column index map:");
+		for (Entry<String, Integer> ent : this.colIndexMap.entrySet()) {
+			sb.append(ent.getKey() + ":" + ent.getValue() + "|");
+		}
+		sb.append("\n");
+		sb.append("Object Columns:");
+		// add all column values
+		for (Entry<String, byte[]> ent : this.colValueMap.entrySet()) {
+			sb.append(ent.getKey()
+					+ "=>"
+					+ MyBytes.toObject(ent.getValue(),
+							MyBytes.getDummyObject(String.class)) + "|");
+		}
+		sb.append("\n");
+		sb.append("Remove List:");
+		for (String rm : this.removeList) {
+			sb.append(rm + " ");
+		}
+		return sb.toString();
+	}
 }

@@ -62,7 +62,7 @@ public class RowWritableDumper {
 			tmpImage.resultToField(res);
 			//now save the image
 			String imageName = (String)MyBytes.toObject(tmpImage.getColumnFirst(ItemImage.ITEM_ID),MyBytes.getDummyObject(String.class));
-			this.saveImage(tmpImage.getColumnFirst(ItemImage.IMAGE_DATA), imageName);
+//			this.saveImage(tmpImage.getColumnFirst(ItemImage.IMAGE_DATA), imageName);
 		}
 		resultScanner.close();
 

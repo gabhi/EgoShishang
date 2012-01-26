@@ -12,7 +12,10 @@ import com.egoshishang.amazon.ProductCrawl;
 import com.egoshishang.conf.HBaseInstance;
 import com.egoshishang.data.AmazonHBaseItemExport.LongCounter;
 import com.egoshishang.orm.ItemOperator;
+import com.egoshishang.orm.HBaseObject.ItemImage;
 import com.egoshishang.orm.HBaseObject.ItemMeta;
+import com.egoshishang.sys.CrawlTimestamp;
+import com.egoshishang.sys.MongoImageIdAssigner;
 import com.egoshishang.sys.WorkQueue;
 
 public class AmazonCrawlHBaseItemExport extends HBaseItemExport {
@@ -31,6 +34,10 @@ public class AmazonCrawlHBaseItemExport extends HBaseItemExport {
 		try {
 			br = new BufferedReader(new FileReader(this.categoryFile));
 			imageDownloadQueue = new WorkQueue(numDownloadThreads);
+			//setup the imageid assigner
+			ItemImage.setIdAssigner(MongoImageIdAssigner.getInstance());
+			//generate a new timestamp
+			CrawlTimestamp.getInstance().generateTimestamp();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -49,15 +56,24 @@ public class AmazonCrawlHBaseItemExport extends HBaseItemExport {
 		@Override
 		public void run() {
 			//get meta information like price and photo url
-			ProductCrawl.crawlItem(itemMeta);
-			if( !itemMeta.getColumnList(ItemMeta.PHOTO_URL).isEmpty())
+			//no need to parse extra pages to get the photo url
+//			ProductCrawl.crawlItem(itemMeta);
+			try{
+				if( !itemMeta.getColumnList(ItemMeta.PHOTO_URL).isEmpty())
+				{
+					ItemOperator.insertItem(itemMeta);
+				}				
+			}catch(Exception e)
 			{
-				ItemOperator.insertItem(itemMeta);
+				System.err.println("failed to insert item");
 			}
+			finally
+			{
 			synchronized (numImageToDownload) {
 				numImageToDownload.value--;
 				System.out.println(".");
 				numImageToDownload.notifyAll();
+			}
 			}
 		}
 	}
@@ -93,18 +109,22 @@ public class AmazonCrawlHBaseItemExport extends HBaseItemExport {
 				//get the image information
 				ImageDownloadThread downloadThread = new ImageDownloadThread(
 						meta, this);
-				synchronized (this.numImageToDownload) {
-					numImageToDownload.value++;
-					while (numImageToDownload.value > 10000) {
-						try {
-							numImageToDownload.wait();
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
+				synchronized(this.numImageToDownload)
+				{
+					numImageToDownload.value ++;
 				}
 				this.imageDownloadQueue.execute(downloadThread);
+			}
+			//wait until it's done
+			synchronized (this.numImageToDownload) {
+				while (numImageToDownload.value > 0) {
+					try {
+						numImageToDownload.wait();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 
