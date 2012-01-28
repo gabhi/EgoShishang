@@ -37,7 +37,7 @@ public class HBaseObject {
 	public  byte[] generateKey()
 	{
 		ImageKeyGenerate ikg = ImageKeyGenerate.getMD5SHA256();
-		this.rowKey = ikg.generate(imageData);
+		this.rowKey = MyBytes.toBytes(CommonUtils.byteArrayToHexString(ikg.generate(imageData)));
 		return this.rowKey;
 	}
 	///
@@ -62,7 +62,7 @@ public class HBaseObject {
 	{
 		if(imageFileName == null)
 		{
-			imageFileName = CommonUtils.byteArrayToHexString(this.rowKey);
+			imageFileName = (String)MyBytes.toObject(this.rowKey,MyBytes.getDummyObject(String.class));
 		}
 		return imageFileName;
 	}
@@ -76,7 +76,7 @@ public class HBaseObject {
 	public boolean removeImage()
 	{
 		//TODO: add code to remove image from gridfs
-		return MongoUtils.removeItemImage(CommonUtils.byteArrayToHexString(this.getRowKey()) + ".jpg");
+		return MongoUtils.removeItemImage(MyBytes.toObject(this.getRowKey(),MyBytes.getDummyObject(String.class)) + ".jpg");
 	}
 	
 	public void setImageData(byte[] imageData)
@@ -91,7 +91,7 @@ public class HBaseObject {
 	
 	@Override
 	public String getTableName() {
-		return "image1";
+		return "image";
 	}
 	}
 	
@@ -123,7 +123,7 @@ public class HBaseObject {
 		
 		@Override
 		public String getTableName() {
-			return "meta1";
+			return "meta";
 		}
 		
 		protected void addPhoto(String photoUrl)

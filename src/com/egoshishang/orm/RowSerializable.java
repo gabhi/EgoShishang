@@ -144,10 +144,13 @@ public abstract class RowSerializable {
 		HTable tab = this.getTable();
 		try {
 			tab.delete(del);
-			this.putTable(tab);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		finally
+		{
+			this.putTable(tab);
 		}
 	}
 
@@ -173,10 +176,13 @@ public abstract class RowSerializable {
 		try {
 //			System.out.println(this.getTableName() + " commit update");
 			table.put(put);
-			this.putTable(table);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		finally
+		{
+			this.putTable(table);			
 		}
 	}
 
@@ -201,10 +207,12 @@ public abstract class RowSerializable {
 		try {
 //			System.out.println(this.getTableName() + " commit delete");
 			table.delete(delete);
-			putTable(table);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		finally{
+			putTable(table);
 		}
 	}
 
@@ -236,7 +244,9 @@ public abstract class RowSerializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		this.putTable(table);
+		finally{
+			this.putTable(table);			
+		}
 		return exist;
 
 	}
@@ -283,7 +293,10 @@ public abstract class RowSerializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		putTable(table);
+		finally
+		{
+			putTable(table);			
+		}
 		return false;
 	}
 

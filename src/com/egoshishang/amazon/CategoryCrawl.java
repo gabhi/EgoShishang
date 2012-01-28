@@ -56,9 +56,9 @@ public class CategoryCrawl {
 		WebFile wf;
 		List<ItemMeta> metaList = null;
 		try {
-			String curPageUrl = getPageTracker().getPageUrl(Integer.valueOf(this.categoryId));
-			this.curPage = getPageTracker().getPageIndex(Integer.valueOf(this.categoryId));
-			this.numPage = getPageTracker().getMaxPage(Integer.valueOf(this.categoryId));
+			String curPageUrl = getPageTracker().getPageUrl(this.categoryId);
+			this.curPage = getPageTracker().getPageIndex(this.categoryId);
+			this.numPage = getPageTracker().getMaxPage(this.categoryId);
 //			System.out.println("current page and max page:" + curPage + " " + numPage);
 			if(this.curPage > this.numPage)
 				return new LinkedList<ItemMeta>();
@@ -76,12 +76,12 @@ public class CategoryCrawl {
 				if(curPageUrl.equals(firstPage()))
 				{
 					numPage = ProductCrawl.getItemPageCnt(content);
-					getPageTracker().setMaxPage(Integer.valueOf(this.categoryId), numPage);
+					getPageTracker().setMaxPage(this.categoryId, numPage);
 					numPageInited = true;										
 				}
 				nextPageUrl = this.nextPageLink(content);
 				//update next page url
-				getPageTracker().setNextPageUrl(Integer.valueOf(this.categoryId), nextPageUrl);
+				getPageTracker().setNextPageUrl(this.categoryId, nextPageUrl);
 //				metaList = ProductCrawl.extractPageItemId(content);
 //				System.out.println(content);
 				metaList = ProductCrawl.parsePage(content);

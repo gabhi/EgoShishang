@@ -19,7 +19,7 @@ public class CategoryPageTrackerTest {
 	public void testUpdatePageIndex()
 	{
 		CategoryPageTracker cpt = CategoryPageTracker.getInstance();
-		int categoryId = 23463;
+		String categoryId = "23463";
 		for(int i = 0; i < 10; i++)
 		{
 			int nextPageIndex = cpt.getPageIndex(categoryId);

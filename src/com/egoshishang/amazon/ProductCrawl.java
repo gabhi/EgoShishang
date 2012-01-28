@@ -225,17 +225,17 @@ public class ProductCrawl {
 	 * @param priceString price input string
 	 * @return a float number, eg. 3.14
 	 */
-	protected static float parsePrice(String priceString)
+	protected static String parsePrice(String priceString)
 	{
 		String patString = "([\\d\\.]+)";
 		Pattern pat = Pattern.compile(patString);
 		Matcher mat = pat.matcher(priceString);
-		float price = -1;
+		String priceStr = null;
 		if(mat.find())
 		{
-			price = Float.valueOf(mat.group(1));
+			priceStr = mat.group(1);
 		}
-		return price;
+		return priceStr;
 	}
 	public static String assemberSmallImageUrl(String asin)
 	{
@@ -300,10 +300,10 @@ public class ProductCrawl {
 				{
 					newPriceText = priceNode.select("span").get(0).text();
 				}
-				float newPrice = parsePrice(newPriceText);
+				String newPrice = parsePrice(newPriceText);
 				if(listPriceText == null)
 					listPriceText = newPriceText;
-				float listPrice = parsePrice(listPriceText);
+				String listPrice = parsePrice(listPriceText);
 				tmpMeta.addColumn(ItemMeta.LIST_PRICE, MyBytes.toBytes(listPrice));
 				tmpMeta.addColumn(ItemMeta.LOWEST_NEW_PRICE, MyBytes.toBytes(newPrice));
 				String photoUrl = assembleAmazonImageUrl(asin);

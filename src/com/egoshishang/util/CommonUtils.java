@@ -134,6 +134,8 @@ public class CommonUtils {
 					connection.setRequestMethod("GET");
 					connection.setDoInput(true);
 					connection.setDoOutput(true);
+					connection.setConnectTimeout(10000);
+					connection.setReadTimeout(10000);
 					connection
 							.addRequestProperty(
 									"Accept",
@@ -147,22 +149,18 @@ public class CommonUtils {
 									"User-Agent",
 									"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 2.0.50727; MS-RTC LM 8)");
 					connection.connect();
+				
 					InputStream is = connection.getInputStream();
 					ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
 					MyBytes.streamCopy(is,byteStream,102400);
 	//				IOUtils.copyBytes(is, byteStream, 102400);
 					imageByte = byteStream.toByteArray();
 					break;
-				} catch (MalformedURLException e) {
-					// TODO Auto-generated catch block
-					System.err.println("err:"  + url);
-//					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-	//				e.printStackTrace();
-					System.err.println("retry: " + url);
+				} catch (Exception e) {
+					e.printStackTrace();
 					tries--;
-				}
+					System.err.println("err:"  + url);
+				} 
 			}
 			return imageByte;
 		}

@@ -25,7 +25,7 @@ public class CategoryPageTracker {
 	{
 		return cpt;
 	}
-	protected DBObject findObject(int categoryId)
+	protected DBObject findObject(String categoryId)
 	{
 		DBObject queryObj = new BasicDBObject();
 		queryObj.put(CATEGORY_KEY,categoryId);
@@ -45,20 +45,20 @@ public class CategoryPageTracker {
 		}
 		return resObj;		
 	}
-	public int getMaxPage(int categoryId)
+	public int getMaxPage(String categoryId)
 	{
 		DBObject resObj = findObject(categoryId);
 		return (Integer)resObj.get(MAX_PAGE_INDEX);
 	}
 	
-	public void setMaxPage(int categoryId, int maxPage)
+	public void setMaxPage(String categoryId, int maxPage)
 	{
 		DBObject resObj = findObject(categoryId);
 		resObj.put(MAX_PAGE_INDEX, maxPage);
 		pageColl.save(resObj);
 	}
 
-	public String getPageUrl(int categoryId)
+	public String getPageUrl(String categoryId)
 	{
 		DBObject resObj = findObject(categoryId);
 		if(resObj.containsField(PAGE_URL))
@@ -69,7 +69,7 @@ public class CategoryPageTracker {
 			return null;
 	}
 	
-	public void setNextPageUrl(int categoryId, String url)
+	public void setNextPageUrl(String categoryId, String url)
 	{
 		DBObject resObj = findObject(categoryId);
 		resObj.put(PAGE_URL, url);
@@ -79,7 +79,7 @@ public class CategoryPageTracker {
 		pageColl.save(resObj);
 	}
 	
-	public int  getPageIndex(int categoryId)
+	public int  getPageIndex(String categoryId)
 	{
 		DBObject resObj = findObject(categoryId);
 		Integer curIndex = (Integer)resObj.get(PAGE_INDEX);

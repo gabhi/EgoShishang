@@ -3,6 +3,7 @@ package com.egoshishang.mongodb;
 
 import com.egoshishang.orm.HBaseObject.ItemImage;
 import com.egoshishang.util.CommonUtils;
+import com.egoshishang.util.MyBytes;
 import com.mongodb.gridfs.GridFS;
 import com.mongodb.gridfs.GridFSInputFile;
 
@@ -13,7 +14,7 @@ public class MongoUtils {
 		boolean saveSuc = true;
 		try{
 			GridFS imageFS = MongoInstance.getImageFS();
-			String hexImageFileName = CommonUtils.byteArrayToHexString(image.getRowKey()) + ".jpg";
+			String hexImageFileName = MyBytes.toObject((image.getRowKey()),MyBytes.getDummyObject(String.class)) + ".jpg";
 //			System.out.println(hexImageFileName);
 			GridFSInputFile imageFile = imageFS.createFile(image.getImageData());
 			imageFile.setFilename(hexImageFileName);
