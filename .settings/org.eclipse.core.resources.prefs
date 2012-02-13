@@ -1,0 +1,18 @@
+#Sat Feb 04 14:16:41 PST 2012
+eclipse.preferences.version=1
+encoding//src/net/walnutvision/amazon/CategoryCrawl.java=UTF-8
+encoding//src/net/walnutvision/amazon/CategoryTreeTest.java=UTF-8
+encoding//src/net/walnutvision/amazon/ItemLookupSample.java=UTF-8
+encoding//src/net/walnutvision/amazon/ItemProfileFetcher.java=UTF-8
+encoding//src/net/walnutvision/amazon/ProductCrawl.java=UTF-8
+encoding//src/net/walnutvision/amazon/ProductCrawlTest.java=UTF-8
+encoding//src/net/walnutvision/amazon/ResponseParser.java=UTF-8
+encoding//src/net/walnutvision/amazon/ResponseParserTest.java=UTF-8
+encoding//src/net/walnutvision/crawl/AmazonPageHandlerTest.java=UTF-8
+encoding//src/net/walnutvision/data/AmazonCrawlHBaseItemExport.java=UTF-8
+encoding//src/net/walnutvision/data/AmazonHBaseItemExportTest.java=UTF-8
+encoding//src/net/walnutvision/data/ImportFromFile.java=UTF-8
+encoding//src/net/walnutvision/mongodb/SystemConfiguration.java=UTF-8
+encoding//src/net/walnutvision/orm/HBaseObject.java=UTF-8
+encoding//src/net/walnutvision/orm/ItemOperatorTest.java=UTF-8
+encoding//src/net/walnutvision/util/CommonUtilsTest.java=UTF-8

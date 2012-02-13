@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/hadoop"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/hbase"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/apache-commons"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons/commons-logging-adapters-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons/commons-logging-api-1.1.1.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons/commons-logging-tests.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons-codec-1.6/commons-codec-1.6-javadoc.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons-codec-1.6/commons-codec-1.6-sources.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons-codec-1.6/commons-codec-1.6-tests.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons-codec-1.6/commons-codec-1.6.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/bk_svn_code/apps/Common/trunk/Libraries/log4j-1.2.16.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/mongodb/mongo-2.7.2.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/JavaDev/commons/jsoup-1.6.1.jar"/>
+	<classpathentry kind="lib" path="/Users/qizhao/Documents/code/WalnutvisionLib/nutch-walnutvision-1.4.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
