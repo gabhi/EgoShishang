@@ -30,7 +30,8 @@ public abstract class RowSerializable {
 	// update time stamp
 	public static final String UPDATE_TIME = "ut";
 	public static final byte[] COLUMN_FAMILY = MyBytes.toBytes("d");
-
+	///used to determine object type, useful for casting
+	public static final String OBJECT_TYPE_ID = "oti";
 	public void setRowKey(byte[] rowKey) {
 		this.rowKey = rowKey;
 	}
