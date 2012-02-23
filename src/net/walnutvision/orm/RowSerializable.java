@@ -17,6 +17,7 @@ import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.RowLock;
 import org.apache.hadoop.util.StringUtils;
 
 
@@ -161,7 +162,28 @@ public abstract class RowSerializable {
 			this.addColumn(columnName, columnVal);
 		}
 	}
-
+	
+	public void commitUpdateWithLock(HTable table, RowLock lock) {
+		// deflate the column index map
+		this.deflateColumnIndexMap();
+		// add all columns
+		Put put = new Put(this.rowKey, lock);
+		// /column max index must be tracked
+		colValueMap.put(COLUMN_MAX_INDEX, this.colIndex);
+		for (Entry<String, byte[]> ent : this.colValueMap.entrySet()) {
+			String colName = ent.getKey();
+			byte[] colValue = ent.getValue();
+			put.add(COLUMN_FAMILY, MyBytes.toBytes(colName), colValue);
+		}
+		try {
+//			System.out.println(this.getTableName() + " commit update");
+			table.put(put);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void commitUpdate() {
 		// deflate the column index map
 		this.deflateColumnIndexMap();
@@ -188,12 +210,12 @@ public abstract class RowSerializable {
 		}
 	}
 
-	protected HTable getTable() {
+	public HTable getTable() {
 		return (HTable) HBaseInstance.getInstance().getTableFromPool(
 				this.getTableName());
 	}
 
-	protected void putTable(HTable table) {
+	public void putTable(HTable table) {
 		HBaseInstance.getInstance().getTablePool().putTable(table);
 	}
 
@@ -218,6 +240,38 @@ public abstract class RowSerializable {
 		}
 	}
 
+	public boolean retrieveFromHBaseWithLock(HTable table, RowLock lock)
+	{
+//		System.out.println((String)MyBytes.toObject(this.getRowKey(), MyBytes.getDummyObject(String.class)));
+		Get get = new Get(this.getRowKey(), lock);
+//		HTable table = getTable();
+		boolean exist = true;
+		try {
+			Result res = table.get(get);
+			exist = !res.isEmpty();
+			if (exist) {
+				for (KeyValue kv : res.list()) {
+					byte[] qualifier = kv.getQualifier();
+					String colName = (String) MyBytes.toObject(qualifier,
+							MyBytes.getDummyObject(String.class));
+					byte[] value = kv.getValue();
+					if (colName.equals(RowSerializable.COLUMN_MAX_INDEX)) {
+						this.colIndex = value;
+						// /populate the key-value map
+						this.inflateColumnIndexMap();
+					} else {
+						this.colValueMap.put(colName, value);
+					}
+
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return exist;
+	}
+	
 	public boolean retrieveFromHBase() {
 //		System.out.println((String)MyBytes.toObject(this.getRowKey(), MyBytes.getDummyObject(String.class)));
 		Get get = new Get(this.getRowKey());
@@ -302,7 +356,7 @@ public abstract class RowSerializable {
 		return false;
 	}
 
-	protected static String synthesizeFullColumnName(String columnName,
+	public static String synthesizeFullColumnName(String columnName,
 			Integer index) {
 		return columnName + "_" + index;
 	}

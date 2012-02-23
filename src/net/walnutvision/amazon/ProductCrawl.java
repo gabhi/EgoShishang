@@ -249,6 +249,7 @@ public class ProductCrawl {
 		String url = "http://images.amazon.com/images/P/" + asin + ".01._SCLZZZZZZZ_PU_PU-5_.jpg";
 		return url;
 	}
+	
 	/**
 	 * @brief extract title, price(list and new), asin information for products listed in current page
 	 * 
@@ -377,4 +378,5 @@ public class ProductCrawl {
 		}
 		return numPage;
 	}
+	
 }

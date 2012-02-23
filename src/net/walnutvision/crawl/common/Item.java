@@ -10,18 +10,26 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import net.walnutvision.orm.RowSerializable;
 import net.walnutvision.sys.CrawlTimestamp;
 import net.walnutvision.util.CommonUtils;
 import net.walnutvision.util.MyBytes;
 
-public class Item extends RowSerializable{
+public abstract class Item extends RowSerializable{
 
+	///item id
+	public static final String ID = "id";
 	///item name
 	public static final String NAME = "nm";
 	///item price
 	public static final String PRICE = "pr";
+	///currency code
+	public static final String CURRENCY_CODE = "cc";
+	///some popular currency code
+	public static final String CNY = "cny";
+	public static final String USD = "usd";
 	///item url
 	public static final String URL = "u";
 	///merchant
@@ -43,7 +51,13 @@ public class Item extends RowSerializable{
 	///extra information
 	public static final String EXTRA = "e";
 
-	
+	public abstract String getMerchant();
+	public abstract Item getInstance();
+	public Item()
+	{
+		///specify the merchant 
+		this.addColumn(MERCHANT, MyBytes.toBytes(this.getMerchant()));
+	}
 	protected void addPhoto(String photoUrl) throws IOException
 	{
 		//first download the image data
@@ -54,6 +68,7 @@ public class Item extends RowSerializable{
 			image.setImageData(imageData);
 			//first generate the hash key
 			image.generateKey();
+			///generate the integer image id
 			image.generateId();
 			//check existence of the image
 			ItemImage queryImage = new ItemImage();
@@ -161,19 +176,35 @@ public class Item extends RowSerializable{
 	private void updateMeta(Item meta2)
 	{
 		//remove existing meta
-		String[] metaFields = {NAME, URL, PRICE, MERCHANT, CATEGORY_PATH,LOCATION, EXTRA};
-		for(String field : metaFields)
+		for(Entry<String, Integer> ent : meta2.colIndexMap.entrySet())
 		{
+			String field = ent.getKey();
+			if(field.equals(Item.PHOTO_URL))
+			{
+				continue;
+			}
 			this.removeColumnList(field);
-		}
-		//now replace the new values
-		for(String field : metaFields)
-		{
 			List<byte[]> colValList = meta2.getColumnList(field);
 			if(colValList.size() > 0)
-				this.addColumnList(field, colValList);	
+			{
+				this.addColumnList(field, colValList);
+			}
 		}
-		//
+		
+//		this.computeMetaHash();
+//		String[] metaFields = {NAME, URL, PRICE, MERCHANT, CATEGORY_PATH,LOCATION, EXTRA};
+//		for(String field : metaFields)
+//		{
+//			this.removeColumnList(field);
+//		}
+//		//now replace the new values
+//		for(String field : metaFields)
+//		{
+//			List<byte[]> colValList = meta2.getColumnList(field);
+//			if(colValList.size() > 0)
+//				this.addColumnList(field, colValList);	
+//		}
+//		//
 	}
 	
 	public void updateItem(Item item2) throws IOException
@@ -198,45 +229,34 @@ public class Item extends RowSerializable{
 			this.updatePhoto(item2);
 	}
 	
-	@Override
-	public String toString()
-	{
-		String[] strFields = {NAME, URL, MERCHANT, CATEGORY_PATH, LOCATION, PHOTO_URL};
-		String[] floatFields = {PRICE};
-		StringBuffer sb = new StringBuffer();
-		for(String field : strFields)
-		{
-			List<byte[]> columnList = this.getColumnList(field);
-			for(int i = 0; i < columnList.size(); i++)
-			{
-				String fieldName = field +"_" + i;
-				byte[] fieldValue = columnList.get(i);
-				String strField = (String)MyBytes.toObject(fieldValue, MyBytes.getDummyObject(String.class));
-				sb.append(fieldName + ":" + strField + "\t");
-			}
-		}
-		for(String field : floatFields)
-		{
-			List<byte[]> columnList = this.getColumnList(field);
-			for(int i = 0; i < columnList.size(); i++)
-			{
-				String fieldName = field +"_" + i;
-				byte[] fieldValue = columnList.get(i);
-				String strField = " " + (float)MyBytes.toObject(fieldValue, (float)0.0f);
-				sb.append(fieldName + ":" + strField + "\t");
-			}
-		}
-		return sb.toString();
-		
-	}
-		
+//	@Override
+//	public String toString()
+//	{
+//		String[] strFields = {NAME, PRICE, URL, MERCHANT, CATEGORY_PATH, LOCATION, PHOTO_URL};
+//		StringBuffer sb = new StringBuffer();
+//		for(String field : strFields)
+//		{
+//			List<byte[]> columnList = this.getColumnList(field);
+//			for(int i = 0; i < columnList.size(); i++)
+//			{
+//				String fieldName = field +"_" + i;
+//				byte[] fieldValue = columnList.get(i);
+//				String strField = (String)MyBytes.toObject(fieldValue, MyBytes.getDummyObject(String.class));
+//				sb.append(fieldName + ":" + strField + "\t");
+//			}
+//		}
+//
+//		return sb.toString();
+//		
+//	}
+//		
 	public  byte[] computeMetaHash()
 	{
 		if(this.colIndexMap.containsKey(Item.META_HASH))
 		{
 			return this.getColumnFirst(Item.META_HASH);
 		}
-		String[] fields = {NAME, URL, PRICE, MERCHANT, CATEGORY_PATH, LOCATION, PHOTO_URL	};
+		String[] fields = {NAME, URL, PRICE, CURRENCY_CODE,MERCHANT, CATEGORY_PATH, LOCATION};
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		for(String field : fields)
 		{
@@ -300,6 +320,24 @@ public class Item extends RowSerializable{
 		}
 		return null;
 	}
+	/**
+	 * generate the row key for amazon item. 
+	 * the row key is simply a combination of merchant and product asin number
+	 * @return
+	 */
+	public byte[] generateKey()
+	{
+		byte[] asinBytes = this.getColumnFirst(ID);
+		if(asinBytes != null)
+		{
+			String asinString = MyBytes.toObject(asinBytes, new String());
+			String combinedKey = getMerchant() + "_" + asinString;
+			this.rowKey =  MyBytes.toBytes(combinedKey);
+			return this.rowKey;
+		}
+		return null;
+	}
+	
 	@Override
 	public String getTableName() {
 		return "item";

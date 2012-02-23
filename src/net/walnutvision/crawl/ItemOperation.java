@@ -1,21 +1,26 @@
-package net.walnutvision.orm;
+package net.walnutvision.crawl;
 
 
+import java.io.IOException;
+
+import net.walnutvision.crawl.common.Item;
 import net.walnutvision.orm.HBaseObject.ItemMeta;
+import net.walnutvision.orm.RowSerializable;
 import net.walnutvision.sys.CrawlTimestamp;
 import net.walnutvision.util.MyBytes;
 
 
-public class ItemOperator {
+public class ItemOperation {
 	
-	public static void insertItem(ItemMeta meta)
+	public static void insertItem(Item meta) throws IOException
 	{
-		if(meta.getRowKey() == null)
+		if(meta.getRowKey() == null || meta.getRowKey().length == 0)
 		{
-			meta.generateKey();			
+			meta.generateKey();
 		}
+
 		//first check the existence of meta
-		ItemMeta queryMeta = new ItemMeta();
+		Item queryMeta = meta.getInstance();
 		queryMeta.setRowKey(meta.getRowKey());
 		boolean exist = queryMeta.retrieveFromHBase();
 		CrawlTimestamp ct = CrawlTimestamp.getInstance();
@@ -33,7 +38,8 @@ public class ItemOperator {
 			meta.addColumn(RowSerializable.UPDATE_TIME,
 					MyBytes.toBytes(ct.getTimestamp()));		
 		}
+		System.out.println(meta);
 		meta.commitUpdate();
-		meta.commitDelete();
+
 	}
 }

@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
+
+import net.walnutvision.conf.GlobalConfiguration;
 import net.walnutvision.data.ImageKeyGenerate;
 import net.walnutvision.orm.RowSerializable;
+import net.walnutvision.sys.HBaseImageIdAssigner;
 import net.walnutvision.sys.ImageIdAssigner;
 import net.walnutvision.util.CommonUtils;
 import net.walnutvision.util.MyBytes;
@@ -18,7 +22,7 @@ public class ItemImage extends RowSerializable {
 	public static final String IMAGE_ID = "id";
 	protected byte[] imageData = null;
 	protected String imageFileName = null;
-	protected static ImageIdAssigner idAssigner = null;
+	protected static ImageIdAssigner idAssigner = HBaseImageIdAssigner.getInstance();
 	///compute the image hash key
 	public  byte[] generateKey()
 	{
@@ -67,7 +71,13 @@ public class ItemImage extends RowSerializable {
 		//define how to save image
 		//simply save image to file system and keep the path
 		///get the image root path
-		String rootPath = ConfigurationParamter.ref().getImageRootPath();
+		Configuration config = GlobalConfiguration.CONFIG;
+		String rootPath = config.get(GlobalConfiguration.CRAWL_IMAGE_ROOT, "/export/public_html/image");
+		File imageDir = new File(rootPath);
+		if(!imageDir.exists())
+		{
+			imageDir.mkdirs();
+		}
 		///image name is image data hash in hex format
 		String fullPath = rootPath + "/" + this.getImageFileName();
 		FileOutputStream fos = new FileOutputStream(fullPath);
